@@ -1,0 +1,431 @@
+{
+  "@context": {
+    "@vocab": "https://actly.dev/testing/",
+    "rdf": "http://www.w3.org/1999/02/22-rdf-syntax-ns#",
+    "rdfs": "http://www.w3.org/2000/01/rdf-schema#",
+    "ex": "https://actly.dev/testing/rerl/"
+  },
+  "@graph": [
+    {
+      "@id": "ex:TestingTargets",
+      "@type": "TestingTarget",
+      "title": "RuErl Testing Targets",
+      "purpose": "Define code coverage and test passing targets for the rerl library",
+      "project": "rerl",
+      "targets": [
+        "ex:CoverageTarget",
+        "ex:PassingTarget"
+      ],
+      "testLevels": [
+        "ex:UnitLevel",
+        "ex:ComponentLevel",
+        "ex:SystemLevel"
+      ]
+    },
+    {
+      "@id": "ex:CoverageTarget",
+      "@type": "CoverageTarget",
+      "title": "Code Coverage Target",
+      "targetPercentage": 80,
+      "unit": "percent",
+      "description": "Target 80% code coverage as a reasonable goal for initial release",
+      "rationale": [
+        "80% coverage provides good confidence in code correctness",
+        "Allows focus on critical paths and public APIs",
+        "Balances thoroughness with practical development time",
+        "Common industry standard for well-tested libraries"
+      ],
+      "scope": {
+        "include": [
+          "All public API functions",
+          "All process spawning mechanisms",
+          "All message passing code paths",
+          "All OTP behavior implementations",
+          "All error handling paths",
+          "All registrar operations",
+          "All state management operations"
+        ],
+        "exclude": [
+          "Internal helper functions that are exercised through public APIs",
+          "Debug/development-only code",
+          "Deprecated code paths"
+        ]
+      },
+      "measurement": {
+        "tool": "cargo-tarpaulin or cargo-llvm-cov",
+        "command": "cargo tarpaulin --out Xml --output-dir ./coverage",
+        "reportFormat": "XML, HTML, or JSON",
+        "minimumLines": 80,
+        "minimumFunctions": 80,
+        "minimumBranches": 75
+      },
+      "status": "target",
+      "current": 0,
+      "notes": "Work towards this target incrementally as the codebase matures"
+    },
+    {
+      "@id": "ex:PassingTarget",
+      "@type": "PassingTarget",
+      "title": "Test Passing Target",
+      "targetPercentage": 100,
+      "unit": "percent",
+      "description": "100% of tests must pass before release",
+      "rationale": [
+        "All tests must pass to ensure behavioral equivalence",
+        "No failing tests should be committed to main branch",
+        "Ensures reliability and correctness",
+        "Critical for production-ready code"
+      ],
+      "requirements": [
+        "All unit tests must pass",
+        "All integration tests must pass",
+        "All doc-tests must pass",
+        "All test suites must compile without warnings (or acceptable warnings documented)",
+        "No flaky tests - tests must be deterministic"
+      ],
+      "measurement": {
+        "tool": "cargo test",
+        "command": "cargo test --all-targets",
+        "expectedOutput": "test result: ok. All tests passed",
+        "acceptableFailures": 0
+      },
+      "status": "requirement",
+      "current": 100,
+      "notes": "This is a hard requirement, not a target. All tests must pass.",
+      "enforcement": "CI/CD pipeline should fail if any test fails"
+    },
+    {
+      "@id": "ex:TestLevels",
+      "@type": "TestLevel",
+      "title": "Test Levels",
+      "levels": [
+        {
+          "@id": "ex:UnitLevel",
+          "name": "Unit Level",
+          "description": "Tests for individual functions, methods, and modules",
+          "scope": "Single function or module",
+          "coverageTarget": 85
+        },
+        {
+          "@id": "ex:ComponentLevel",
+          "name": "Component Level",
+          "description": "Tests for complete components (e.g., GenServer, GenStateM, EventManager)",
+          "scope": "Complete component with all its interfaces",
+          "coverageTarget": 80
+        },
+        {
+          "@id": "ex:SystemLevel",
+          "name": "System Level",
+          "description": "Tests for end-to-end system behavior with multiple components",
+          "scope": "Multiple components interacting together",
+          "coverageTarget": 70
+        }
+      ]
+    },
+    {
+      "@id": "ex:TestCategories",
+      "@type": "TestCategory",
+      "title": "Test Categories and Coverage Requirements",
+      "categories": [
+        {
+          "@id": "ex:UnitTests",
+          "name": "Unit Tests",
+          "coverageTarget": 85,
+          "description": "Tests for individual functions and modules",
+          "examples": [
+            "Pid creation and manipulation",
+            "SwErlAtom operations",
+            "Error type handling",
+            "Type conversions"
+          ]
+        },
+        {
+          "@id": "ex:IntegrationTests",
+          "name": "Integration Tests",
+          "coverageTarget": 75,
+          "description": "Tests for component interactions",
+          "examples": [
+            "Process spawning and registration",
+            "Message passing between processes",
+            "Registrar operations",
+            "State management across operations"
+          ]
+        },
+        {
+          "@id": "ex:BehaviorTests",
+          "name": "Behavioral Equivalence Tests",
+          "coverageTarget": 90,
+          "description": "Tests ensuring SwErl behavioral equivalence",
+          "examples": [
+            "OTP behavior implementations",
+            "Process lifecycle management",
+            "Message passing semantics",
+            "Error handling patterns"
+          ]
+        },
+        {
+          "@id": "ex:ConcurrencyTests",
+          "name": "Concurrency Tests",
+          "coverageTarget": 70,
+          "description": "Tests for concurrent operations",
+          "examples": [
+            "Multiple processes sending messages",
+            "Concurrent process registration",
+            "Race condition prevention",
+            "Thread safety verification"
+          ]
+        },
+        {
+          "@id": "ex:ComponentTests",
+          "name": "Component Tests",
+          "coverageTarget": 80,
+          "description": "Tests for complete component functionality",
+          "examples": [
+            "Full GenServer lifecycle (start, call, cast, stop)",
+            "Complete GenStateM state transitions",
+            "EventManager with multiple handlers",
+            "Process registry with multiple processes",
+            "Safe data structures with all operations",
+            "Process builder with all configuration combinations"
+          ]
+        },
+        {
+          "@id": "ex:ComponentTests",
+          "name": "Component Tests",
+          "coverageTarget": 80,
+          "description": "Tests for complete component functionality",
+          "level": "ex:ComponentLevel",
+          "examples": [
+            "Full GenServer lifecycle (start, call, cast, stop)",
+            "Complete GenStateM state transitions",
+            "EventManager with multiple handlers",
+            "Process registry with multiple processes",
+            "Safe data structures with all operations",
+            "Process builder with all configuration combinations"
+          ]
+        },
+        {
+          "@id": "ex:SystemTests",
+          "name": "System Tests",
+          "coverageTarget": 70,
+          "description": "Tests for end-to-end system behavior",
+          "level": "ex:SystemLevel",
+          "examples": [
+            "Multiple processes communicating in a system",
+            "Process spawning chains and dependencies",
+            "System-wide error handling and recovery",
+            "Concurrent process creation and messaging",
+            "System state consistency under load",
+            "Resource cleanup and process termination",
+            "Integration of all OTP behaviors in a system",
+            "Cross-component message passing",
+            "System initialization and shutdown",
+            "Performance and scalability under realistic loads"
+          ]
+        }
+      ]
+    },
+    {
+      "@id": "ex:CriticalPaths",
+      "@type": "CriticalPath",
+      "title": "Critical Code Paths - 100% Coverage Required",
+      "description": "These paths must have 100% test coverage",
+      "paths": [
+        {
+          "path": "Process spawning",
+          "coverage": 100,
+          "rationale": "Core functionality - all spawn variants must be tested",
+          "requirements": [
+            "Test all four spawn variants (async/sync × stateless/stateful)",
+            "Test named and unnamed processes",
+            "Test local and global registration",
+            "Test error cases (duplicate names, invalid states)"
+          ]
+        },
+        {
+          "path": "Message sending",
+          "coverage": 100,
+          "rationale": "Core functionality - all send() implementations must be tested",
+          "requirements": [
+            "Test Pid-based sending",
+            "Test String-based sending",
+            "Test SwErlAtom-based sending",
+            "Test error cases (unregistered processes)"
+          ]
+        },
+        {
+          "path": "Error handling",
+          "coverage": 100,
+          "rationale": "All error cases must be tested to ensure proper error propagation",
+          "requirements": [
+            "Test all SwErlError variants",
+            "Test error propagation through call chains",
+            "Test error handling in OTP behaviors",
+            "Test Result<T, E> conversions"
+          ]
+        },
+        {
+          "path": "Process registration",
+          "coverage": 100,
+          "rationale": "Critical for process management - all registration scenarios must be tested",
+          "requirements": [
+            "Test local registration",
+            "Test global registration",
+            "Test registration by name and by PID",
+            "Test unregistration",
+            "Test duplicate registration prevention"
+          ]
+        },
+        {
+          "path": "OTP behavior initialization",
+          "coverage": 100,
+          "rationale": "All OTP behaviors must initialize correctly",
+          "requirements": [
+            "Test GenServer initialization",
+            "Test GenStateM initialization",
+            "Test EventManager initialization",
+            "Test initialization with various initial states",
+            "Test initialization error handling"
+          ]
+        },
+        {
+          "path": "State management",
+          "coverage": 100,
+          "rationale": "State is embedded in process - critical for correctness",
+          "requirements": [
+            "Test state updates in stateful processes",
+            "Test state persistence across messages",
+            "Test state access and modification",
+            "Test state initialization"
+          ]
+        },
+        {
+          "path": "Process lifecycle",
+          "coverage": 100,
+          "rationale": "Complete lifecycle management is critical",
+          "requirements": [
+            "Test process creation",
+            "Test process message handling",
+            "Test process termination",
+            "Test cleanup operations"
+          ]
+        }
+      ]
+    },
+    {
+      "@id": "ex:MeasurementTools",
+      "@type": "MeasurementTool",
+      "title": "Coverage Measurement Tools",
+      "tools": [
+        {
+          "name": "cargo-tarpaulin",
+          "description": "Code coverage tool for Rust",
+          "installation": "cargo install cargo-tarpaulin",
+          "usage": "cargo tarpaulin --out Xml --output-dir ./coverage",
+          "preferred": true
+        },
+        {
+          "name": "cargo-llvm-cov",
+          "description": "LLVM-based code coverage tool",
+          "installation": "cargo install cargo-llvm-cov",
+          "usage": "cargo llvm-cov --html",
+          "preferred": false
+        }
+      ],
+      "recommendation": "Use cargo-tarpaulin for initial coverage measurement"
+    },
+    {
+      "@id": "ex:TestQualityMetrics",
+      "@type": "QualityMetric",
+      "title": "Test Quality Metrics",
+      "metrics": [
+        {
+          "metric": "Test Pass Rate",
+          "target": 100,
+          "unit": "percent",
+          "description": "Percentage of tests that pass",
+          "requirement": "MUST be 100%"
+        },
+        {
+          "metric": "Code Coverage",
+          "target": 80,
+          "unit": "percent",
+          "description": "Percentage of code covered by tests",
+          "requirement": "SHOULD be at least 80%"
+        },
+        {
+          "metric": "Branch Coverage",
+          "target": 75,
+          "unit": "percent",
+          "description": "Percentage of branches covered by tests",
+          "requirement": "SHOULD be at least 75%"
+        },
+        {
+          "metric": "Function Coverage",
+          "target": 80,
+          "unit": "percent",
+          "description": "Percentage of functions covered by tests",
+          "requirement": "SHOULD be at least 80%"
+        }
+      ]
+    },
+    {
+      "@id": "ex:CIRequirements",
+      "@type": "CIRequirement",
+      "title": "CI/CD Requirements",
+      "requirements": [
+        {
+          "requirement": "All tests must pass",
+          "enforcement": "CI pipeline must fail if any test fails",
+          "priority": "critical"
+        },
+        {
+          "requirement": "Coverage must meet target",
+          "enforcement": "CI pipeline should warn if coverage drops below 80%",
+          "priority": "important"
+        },
+        {
+          "requirement": "No compilation warnings",
+          "enforcement": "CI pipeline should fail on new warnings (or document acceptable warnings)",
+          "priority": "important"
+        },
+        {
+          "requirement": "All doc-tests must pass",
+          "enforcement": "CI pipeline must fail if doc-tests fail",
+          "priority": "critical"
+        }
+      ]
+    },
+    {
+      "@id": "ex:CurrentStatus",
+      "@type": "TestStatus",
+      "title": "Current Test Status",
+      "testPassRate": 100,
+      "testPassRateUnit": "percent",
+      "totalTests": 16,
+      "passedTests": 16,
+      "failedTests": 0,
+      "codeCoverage": 0,
+      "codeCoverageUnit": "percent",
+      "testBreakdown": {
+        "unitTests": 6,
+        "componentTests": 0,
+        "systemTests": 0,
+        "integrationTests": 9,
+        "behaviorTests": 1
+      },
+      "note": "Coverage measurement not yet run. Need to add cargo-tarpaulin and generate coverage report. Component and system level tests need to be added.",
+      "lastUpdated": "2024-01-01T00:00:00Z",
+      "status": "meets_passing_target",
+      "missing": [
+        "Component-level tests for complete GenServer lifecycle",
+        "Component-level tests for complete GenStateM lifecycle",
+        "Component-level tests for EventManager with multiple handlers",
+        "System-level tests for multi-process communication",
+        "System-level tests for process spawning chains",
+        "System-level tests for system-wide error handling"
+      ]
+    }
+  ]
+}
+

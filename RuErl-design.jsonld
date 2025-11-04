@@ -1,0 +1,452 @@
+{
+  "@context": {
+    "@vocab": "https://actly.dev/design/",
+    "rdf": "http://www.w3.org/1999/02/22-rdf-syntax-ns#",
+    "rdfs": "http://www.w3.org/2000/01/rdf-schema#",
+    "ex": "https://actly.dev/design/ruerl/"
+  },
+  "@graph": [
+    {
+      "@id": "ex:ReengineeringDecisions",
+      "@type": "DesignDocument",
+      "title": "RuErl Design Decisions",
+      "purpose": "Document approved reengineering decisions for converting SwErl (Swift) to RuErl (Rust)",
+      "source": "SwErl",
+      "target": "RuErl",
+      "decisions": [
+        "ex:Decision1",
+        "ex:Decision2",
+        "ex:Decision3",
+        "ex:Decision4",
+        "ex:Decision5"
+      ]
+    },
+    {
+      "@id": "ex:Decision1",
+      "@type": "ArchitectureDecision",
+      "id": "concurrency-model",
+      "title": "Concurrency Model: Tokio",
+      "decision": "Use Tokio runtime for async/await concurrency",
+      "rationale": [
+        "Tokio provides excellent async/await support and runtime",
+        "Allows preserving both async and sync process behaviors",
+        "Industry-standard async runtime for Rust",
+        "Excellent performance and ecosystem"
+      ],
+      "implementation": {
+        "runtime": "Tokio",
+        "processExecution": "Processes run as Tokio tasks",
+        "messageChannels": "tokio::sync::mpsc for async messaging",
+        "responseChannels": "tokio::sync::oneshot for synchronous responses",
+        "behaviorSupport": "Both async and sync behaviors supported via Tokio runtime"
+      },
+      "status": "approved"
+    },
+    {
+      "@id": "ex:Decision2",
+      "@type": "ArchitectureDecision",
+      "id": "message-sending-api",
+      "title": "Message Sending API: send() Method",
+      "decision": "Replace Swift's ! infix operator with send() method",
+      "rationale": [
+        "Rust doesn't support custom infix operators like Swift",
+        "Method-based API is more idiomatic Rust",
+        "Clear and explicit intent"
+      ],
+      "implementation": {
+        "pidBased": "pid.send(message) for Pid-based sending",
+        "stringBased": "\"name\".send(message) via trait extension for String",
+        "atomBased": "atom.send(message) via trait extension for SwErlAtom",
+        "semantics": "Preserves same message-passing semantics as SwErl"
+      },
+      "status": "approved"
+    },
+    {
+      "@id": "ex:Decision3",
+      "@type": "ArchitectureDecision",
+      "id": "error-handling",
+      "title": "Error Handling: Result<T, E>",
+      "decision": "Use Rust's Result<T, E> type instead of Swift's tuple-based responses",
+      "rationale": [
+        "Idiomatic Rust error handling",
+        "Compiler-enforced error handling",
+        "Better integration with Rust ecosystem"
+      ],
+      "implementation": {
+        "conversion": "Convert SwErlResponse tuples (SwErlPassed, Any?) to Result<Option<Value>, SwErlError>",
+        "successWithValue": "Ok(Some(value)) for success with value",
+        "successWithoutValue": "Ok(None) for success without value",
+        "failure": "Err(SwErlError) for failures",
+        "passedEnum": "SwErlPassed enum becomes part of Result pattern"
+      },
+      "status": "approved"
+    },
+    {
+      "@id": "ex:Decision4",
+      "@type": "ArchitectureDecision",
+      "id": "state-storage",
+      "title": "State Storage: Process Struct",
+      "decision": "Store state directly in SwErlProcess struct rather than external registry",
+      "rationale": [
+        "More idiomatic Rust (clear ownership)",
+        "Better encapsulation (state with process)",
+        "No extra lookup needed",
+        "Compiler helps prevent leaks",
+        "Aligns with Rust ownership model"
+      ],
+      "tradeoffs": {
+        "pluses": [
+          "More idiomatic Rust (clear ownership)",
+          "Better encapsulation (state with process)",
+          "No extra lookup needed",
+          "Compiler helps prevent leaks",
+          "Aligns with Rust ownership model"
+        ],
+        "minuses": [
+          "Process struct becomes larger (acceptable)",
+          "Less direct match to SwErl design (but preserves behavior)",
+          "State tied to process lifetime (appropriate)"
+        ]
+      },
+      "implementation": {
+        "storage": "State stored as Option<Arc<Mutex<SwErlState>>> in SwErlProcess",
+        "lifetime": "State lifetime tied to process lifetime",
+        "ownership": "Clear ownership and encapsulation"
+      },
+      "status": "approved",
+      "option": "B"
+    },
+    {
+      "@id": "ex:Decision5",
+      "@type": "ArchitectureDecision",
+      "id": "process-spawning",
+      "title": "Process Spawning: Builder Pattern",
+      "decision": "Use unified builder pattern instead of separate spawn functions",
+      "rationale": [
+        "Single entry point reduces duplication",
+        "Flexible and extensible API",
+        "Idiomatic Rust builder pattern",
+        "Better for future extensions"
+      ],
+      "tradeoffs": {
+        "pluses": [
+          "Single entry point reduces duplication",
+          "Flexible and extensible API",
+          "Idiomatic Rust builder pattern",
+          "Better for future extensions"
+        ],
+        "minuses": [
+          "Less direct match to SwErl API (but preserves behavior)",
+          "More verbose usage (acceptable trade-off)",
+          "Additional abstraction layer (beneficial)"
+        ]
+      },
+      "implementation": {
+        "builder": "ProcessBuilder with fluent API",
+        "methods": [
+          ".async()",
+          ".sync()",
+          ".stateless()",
+          ".stateful()",
+          ".name()",
+          ".queue()"
+        ],
+        "example": "ProcessBuilder::new().async().stateless().name(\"my_process\").spawn(handler)?"
+      },
+      "status": "approved",
+      "option": "B"
+    },
+    {
+      "@id": "ex:ModuleStructure",
+      "@type": "ArchitectureSpecification",
+      "structure": {
+        "root": "ruerl/",
+        "cargo": "Cargo.toml",
+        "src": {
+          "lib.rs": "Main entry, re-exports",
+          "pid.rs": "Pid, SwErlAtom, SwErlRef types",
+          "process.rs": "SwErlProcess with embedded state",
+          "registrar.rs": "Process registry (local/global)",
+          "errors.rs": "SwErlError enum",
+          "message.rs": "Message sending traits and impls",
+          "builder.rs": "ProcessBuilder for spawning",
+          "types.rs": "Type aliases (SwErlState, SwErlMessage, etc.)",
+          "safe_data.rs": "Safe data structures",
+          "otp": {
+            "mod.rs": "OTP module entry",
+            "base.rs": "OTPActorBehavior trait",
+            "gen_server.rs": "GenServer implementation",
+            "gen_statem.rs": "GenStateM implementation",
+            "event_manager.rs": "EventManager implementation"
+          }
+        },
+        "tests": "Test modules",
+        "examples": "Example code"
+      }
+    },
+    {
+      "@id": "ex:TypeMappings",
+      "@type": "TypeMapping",
+      "mappings": [
+        {
+          "swift": "typealias SwErlState = Any",
+          "rust": "type SwErlState = Box<dyn Any + Send + Sync>",
+          "notes": "Must be Send + Sync for thread safety"
+        },
+        {
+          "swift": "typealias SwErlMessage = Any",
+          "rust": "type SwErlMessage = Box<dyn Any + Send + Sync>",
+          "notes": "Must be Send + Sync for thread safety"
+        },
+        {
+          "swift": "typealias SwErlResponse = (SwErlPassed, Any?)",
+          "rust": "type SwErlResponse = Result<Option<Box<dyn Any + Send + Sync>>, SwErlError>",
+          "notes": "Using Result pattern"
+        },
+        {
+          "swift": "DispatchQueue",
+          "rust": "tokio::runtime::Handle or tokio::task::JoinHandle",
+          "notes": "Tokio equivalent"
+        },
+        {
+          "swift": "@Sendable closures",
+          "rust": "Box<dyn Fn(...) + Send + Sync>",
+          "notes": "Rust trait object"
+        },
+        {
+          "swift": "Dictionary<K, V>",
+          "rust": "HashMap<K, V>",
+          "notes": "Standard Rust collection"
+        },
+        {
+          "swift": "String (process names)",
+          "rust": "String",
+          "notes": "Same"
+        }
+      ]
+    },
+    {
+      "@id": "ex:ProtocolMappings",
+      "@type": "ProtocolMapping",
+      "mappings": [
+        {
+          "swift": "OTPActor_behavior",
+          "rust": "trait OTPActorBehavior"
+        },
+        {
+          "swift": "GenServerBehavior",
+          "rust": "trait GenServerBehavior"
+        },
+        {
+          "swift": "GenStatemBehavior",
+          "rust": "trait GenStatemBehavior"
+        }
+      ],
+      "note": "All traits use &self or static methods where appropriate"
+    },
+    {
+      "@id": "ex:ProcessStructure",
+      "@type": "DataStructure",
+      "name": "SwErlProcess",
+      "definition": {
+        "pid": "Pid",
+        "state": "Option<Arc<Mutex<SwErlState>>>",
+        "note": "Embedded state per Decision 4",
+        "handler": "ProcessHandler enum",
+        "registration_type": "RegistrationType",
+        "name": "Option<String>"
+      },
+      "handlerTypes": [
+        "AsyncStateless",
+        "SyncStateless",
+        "AsyncStateful",
+        "SyncStateful",
+        "GenServer",
+        "GenStatem",
+        "EventManager"
+      ]
+    },
+    {
+      "@id": "ex:RegistrarStructure",
+      "@type": "DataStructure",
+      "name": "Registrar",
+      "definition": {
+        "processes": "Arc<RwLock<HashMap<Pid, Arc<SwErlProcess>>>>",
+        "name_map": "Arc<RwLock<HashMap<String, Pid>>>",
+        "pid_counter": "Arc<AtomicU64>",
+        "note": "Thread-safe counter"
+      },
+      "methods": {
+        "local": "&'static Registrar",
+        "global": "&'static Registrar"
+      }
+    },
+    {
+      "@id": "ex:BuilderPattern",
+      "@type": "APIDesign",
+      "name": "ProcessBuilder",
+      "methods": [
+        "new() -> Self",
+        "async(mut self) -> Self",
+        "sync(mut self) -> Self",
+        "stateless(mut self) -> Self",
+        "stateful(mut self) -> Self",
+        "name(mut self, name: impl Into<String>) -> Self",
+        "registration_type(mut self, rt: RegistrationType) -> Self",
+        "spawn<F>(self, handler: F) -> Result<Pid, SwErlError>"
+      ],
+      "pattern": "Fluent builder pattern",
+      "decision": "ex:Decision5"
+    },
+    {
+      "@id": "ex:MessageSending",
+      "@type": "APIDesign",
+      "name": "SendMessage trait",
+      "trait": {
+        "method": "send(&self, message: SwErlMessage) -> SwErlResponse"
+      },
+      "implementations": [
+        {
+          "type": "Pid",
+          "method": "pid.send(message)"
+        },
+        {
+          "type": "str",
+          "method": "\"name\".send(message)"
+        },
+        {
+          "type": "SwErlAtom",
+          "method": "atom.send(message)"
+        }
+      ],
+      "decision": "ex:Decision2"
+    },
+    {
+      "@id": "ex:OTPBehaviors",
+      "@type": "OTPSpecification",
+      "behaviors": [
+        {
+          "@id": "ex:GenServer",
+          "trait": "GenServerBehavior",
+          "methods": [
+            "initialize_data(data: Option<&dyn Any>) -> Result<Box<dyn Any + Send + Sync>, SwErlError>",
+            "handle_call(&self, request: &dyn Any, data: &dyn Any) -> Result<(Box<dyn Any + Send + Sync>, Box<dyn Any + Send + Sync>), SwErlError>",
+            "handle_cast(&self, request: &dyn Any, data: &dyn Any) -> Result<Box<dyn Any + Send + Sync>, SwErlError>",
+            "terminate_cleanup(&self, reason: &str, data: Option<&dyn Any>)"
+          ],
+          "api": {
+            "start_link": "GenServer::start_link<T: GenServerBehavior>(name: &str, behavior: T, initial_state: Option<Box<dyn Any + Send + Sync>>) -> Result<String, SwErlError>",
+            "call": "GenServer::call(name: &str, message: SwErlMessage) -> Result<SwErlResponse, SwErlError>",
+            "cast": "GenServer::cast(name: &str, message: SwErlMessage) -> Result<(), SwErlError>",
+            "unlink": "GenServer::unlink(name: &str, reason: &str) -> Result<(), SwErlError>"
+          }
+        },
+        {
+          "@id": "ex:GenStateM",
+          "trait": "GenStatemBehavior",
+          "methods": [
+            "initialize(&self, initial_data: &dyn Any) -> Result<Box<dyn Any + Send + Sync>, SwErlError>",
+            "handle_call(&self, message: &dyn Any, current_state: &dyn Any) -> Result<(SwErlResponse, Box<dyn Any + Send + Sync>), SwErlError>",
+            "handle_cast(&self, message: &dyn Any, current_state: &dyn Any) -> Result<Box<dyn Any + Send + Sync>, SwErlError>",
+            "notify(&self, message: &dyn Any, state: &dyn Any)",
+            "unlinked(&self, message: &dyn Any, current_state: &dyn Any)"
+          ]
+        },
+        {
+          "@id": "ex:EventManager",
+          "api": {
+            "link": "EventManager::link(name: &str, handlers: Vec<Box<dyn Fn(Pid, SwErlMessage) + Send + Sync>>) -> Result<Pid, SwErlError>",
+            "unlink": "EventManager::unlink(name: &str) -> Result<(), SwErlError>",
+            "notify": "EventManager::notify(name: &str, message: SwErlMessage)"
+          }
+        }
+      ]
+    },
+    {
+      "@id": "ex:SafeDataStructures",
+      "@type": "APISpecification",
+      "commandEnum": "SafeDictCommand",
+      "variants": [
+        "Add",
+        "Remove",
+        "Get",
+        "GetKeys",
+        "GetValues",
+        "GetRaw"
+      ],
+      "function": "build_safe<K, V>(dictionary: HashMap<K, V>, name: &str) -> Result<(), SwErlError>",
+      "constraints": "K: Send + Sync + 'static, V: Send + Sync + 'static"
+    },
+    {
+      "@id": "ex:Dependencies",
+      "@type": "DependencySpecification",
+      "dependencies": [
+        {
+          "name": "tokio",
+          "version": "1.0",
+          "features": ["full"]
+        }
+      ]
+    },
+    {
+      "@id": "ex:BehavioralEquivalence",
+      "@type": "Requirement",
+      "title": "Behavioral Equivalence Requirements",
+      "requirements": [
+        {
+          "requirement": "API Surface",
+          "description": "Same public interface (Rust-style naming)"
+        },
+        {
+          "requirement": "Concurrency Semantics",
+          "description": "Preserved via Tokio"
+        },
+        {
+          "requirement": "Error Handling",
+          "description": "Result-based (Rust idiom)"
+        },
+        {
+          "requirement": "Process Lifecycle",
+          "description": "spawn → register → message handling → unlink"
+        },
+        {
+          "requirement": "Message Passing",
+          "description": "Same semantics (method-based API)"
+        },
+        {
+          "requirement": "State Management",
+          "description": "Embedded in process (Rust idiom)"
+        },
+        {
+          "requirement": "OTP Behaviors",
+          "description": "Same functionality (GenServer, GenStateM, EventManager)"
+        }
+      ]
+    },
+    {
+      "@id": "ex:ImplementationNotes",
+      "@type": "ImplementationGuideline",
+      "guidelines": [
+        "All types must implement Send + Sync for thread safety",
+        "Use Arc<Mutex<T>> for shared mutable state",
+        "Use Arc<RwLock<T>> for concurrent read access",
+        "Use AtomicU64 for thread-safe counters",
+        "Process IDs are Copy types (small integers)",
+        "All closures must be Send + Sync for Tokio compatibility"
+      ]
+    },
+    {
+      "@id": "ex:TestingStrategy",
+      "@type": "TestingRequirement",
+      "requirements": [
+        "Generate tests from behavioral equivalence requirements",
+        "Test all four process types (async/sync × stateless/stateful)",
+        "Test all OTP behaviors (GenServer, GenStateM, EventManager)",
+        "Test safe data structures",
+        "Test error conditions",
+        "Test concurrency scenarios"
+      ]
+    }
+  ]
+}
+

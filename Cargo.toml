@@ -1,0 +1,36 @@
+[package]
+name = "rerl"
+version = "0.1.0"
+edition = "2021"
+authors = ["RuErl Contributors"]
+description = "Erlang/OTP-inspired concurrency library for Rust"
+license = "MIT"
+repository = "https://github.com/inter-erlang/RuErl"
+readme = "README.md"
+
+[dependencies]
+tokio = { version = "1.0", features = ["full"] }
+
+[dev-dependencies]
+tokio-test = "0.4"
+
+[lib]
+name = "rerl"
+path = "src/lib.rs"
+
+[[test]]
+name = "rerl_tests"
+path = "tests/rerl_tests.rs"
+
+[[test]]
+name = "rerl_gen_server_tests"
+path = "tests/rerl_gen_server_tests.rs"
+
+[[test]]
+name = "rerl_gen_statem_tests"
+path = "tests/rerl_gen_statem_tests.rs"
+
+[[test]]
+name = "rerl_event_manager_tests"
+path = "tests/rerl_event_manager_tests.rs"
+
